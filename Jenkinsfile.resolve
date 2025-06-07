@@ -36,6 +36,7 @@ pipeline {
                     echo "Running Ansible playbook: ${playbook}"
                     
                     // Lệnh ansible-playbook hoàn chỉnh
+                    withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
                     sh """
                     ansible-playbook -i "${params.TARGET_HOST}," \\
                                      -u ubuntu \\
