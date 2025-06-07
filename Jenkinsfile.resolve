@@ -2,11 +2,6 @@
 pipeline {
     agent any
 
-    // KHỐI QUAN TRỌNG BỊ THIẾU
-    tools {
-        // Tên 'ansible-latest' phải khớp với tên bạn đã đặt trong Manage Jenkins -> Tools
-        ansible 'ansible-latest'
-    }
 
     parameters {
         string(name: 'TARGET_HOST', description: 'IP of the target VM')
