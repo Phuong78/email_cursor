@@ -1,20 +1,34 @@
 // file: Jenkinsfile.resolve
 pipeline {
     agent any
+
+    // THÊM VÀO: Chỉ cho Jenkins cần chuẩn bị công cụ Ansible
+    // Tên 'ansible-latest' phải khớp với tên bạn đã đặt trong Manage Jenkins -> Tools
+    tools {
+        ansible 'ansible-latest'
+    }
+
     parameters {
         string(name: 'TARGET_HOST', description: 'IP of the target VM')
         string(name: 'INCIDENT_TYPE', description: 'Type of incident (DISK_FULL, CPU_HIGH, MAIL_QUEUE)')
     }
+
     stages {
+        // THÊM VÀO: Giai đoạn checkout code cho rõ ràng (good practice)
+        stage('Checkout Source Code') {
+            steps {
+                echo "Lấy mã nguồn từ Git..."
+                checkout scm
+            }
+        }
+        
         stage('Resolving Incident') {
             steps {
                 script {
-                    // Chuyển tham số đầu vào thành chữ hoa để so sánh không phân biệt chữ hoa/thường
                     def incident = params.INCIDENT_TYPE.toUpperCase()
                     echo "Attempting to resolve ${incident} on host ${params.TARGET_HOST}"
                     
                     def playbook = ""
-                    // Thay vì so sánh bằng (==), ta dùng `contains` để linh hoạt hơn
                     if (incident.contains('DISK')) {
                         playbook = 'ansible/disk_fix.yml'
                     } else if (incident.contains('CPU')) {
@@ -27,9 +41,11 @@ pipeline {
                     
                     echo "Running Ansible playbook: ${playbook}"
                     
+                    // SỬA LẠI: Thêm user và đường dẫn tuyệt đối cho key
                     sh """
                     ansible-playbook -i "${params.TARGET_HOST}," \\
-                                     --private-key ~/.ssh/nguyenp-key-pair.pem \\
+                                     -u ubuntu \\
+                                     --private-key /root/.ssh/nguyenp-key-pair.pem \\
                                      ${playbook}
                     """
                 }
