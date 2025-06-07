@@ -1,0 +1,25 @@
+# ansible/disk_fix.yml
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Find the largest log file in /var/log
+      shell: "find /var/log -type f -name '*.log' -printf '%s %p\n' | sort -nr | head -n 1 | awk '{print $2}'"
+      register: largest_log_file_result
+      changed_when: false
+
+    - name: Set fact for the largest log file path
+      set_fact:
+        largest_log: "{{ largest_log_file_result.stdout }}"
+
+    - name: Archive last 10000 lines of the large log
+      shell: "tail -n 10000 {{ largest_log }} > {{ largest_log }}.archived_$(date +%F_%T)"
+      when: largest_log != ""
+
+    - name: Clear the largest log file
+      shell: "> {{ largest_log }}"
+      when: largest_log != ""
+
+    - name: Print resolution summary
+      debug:
+        msg: "Disk Fix: Archived last 10k lines and cleared {{ largest_log }}. Please re-check Nagios in a few minutes."

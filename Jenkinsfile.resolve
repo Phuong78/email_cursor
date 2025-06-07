@@ -1,4 +1,4 @@
-// Jenkinsfile.resolve
+// file: Jenkinsfile.resolve
 pipeline {
     agent any
     parameters {
@@ -9,22 +9,24 @@ pipeline {
         stage('Resolving Incident') {
             steps {
                 script {
-                    echo "Attempting to resolve ${params.INCIDENT_TYPE} on host ${params.TARGET_HOST}"
-
+                    // Chuyển tham số đầu vào thành chữ hoa để so sánh không phân biệt chữ hoa/thường
+                    def incident = params.INCIDENT_TYPE.toUpperCase()
+                    echo "Attempting to resolve ${incident} on host ${params.TARGET_HOST}"
+                    
                     def playbook = ""
-                    if (params.INCIDENT_TYPE == 'DISK_FULL') {
+                    // Thay vì so sánh bằng (==), ta dùng `contains` để linh hoạt hơn
+                    if (incident.contains('DISK')) {
                         playbook = 'ansible/disk_fix.yml'
-                    } else if (params.INCIDENT_TYPE == 'CPU_HIGH') {
+                    } else if (incident.contains('CPU')) {
                         playbook = 'ansible/cpu_fix.yml'
-                    } else if (params.INCIDENT_TYPE == 'MAIL_QUEUE') {
+                    } else if (incident.contains('MAIL')) {
                         playbook = 'ansible/mail_fix.yml'
                     } else {
                         error "Invalid incident type: ${params.INCIDENT_TYPE}"
                     }
-
+                    
                     echo "Running Ansible playbook: ${playbook}"
-
-                    // Chạy playbook Ansible tương ứng
+                    
                     sh """
                     ansible-playbook -i "${params.TARGET_HOST}," \\
                                      --private-key ~/.ssh/nguyenp-key-pair.pem \\

@@ -1,0 +1,20 @@
+# ansible/cpu_fix.yml
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Find the name of the top CPU consuming process
+      shell: "ps -eo comm,pcpu --sort=-pcpu | head -n 2 | tail -n 1 | awk '{print $1}'"
+      register: top_process_name
+      changed_when: false
+
+    - name: Attempt to restart the service associated with the process
+      service:
+        name: "{{ top_process_name.stdout }}"
+        state: restarted
+      ignore_errors: yes # Bỏ qua lỗi nếu tên process không phải là tên service
+      register: service_restart_result
+
+    - name: Print resolution summary
+      debug:
+        msg: "CPU Fix: Attempted to restart service '{{ top_process_name.stdout }}'. Result: {{ 'Success' if not service_restart_result.failed else 'Failed (Maybe not a service?)' }}. System needs time to stabilize."

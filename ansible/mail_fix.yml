@@ -1,0 +1,30 @@
+# ansible/mail_fix.yml
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Check if Postfix service is running
+      service_facts:
+
+    - name: Restart Postfix if it's not running
+      service:
+        name: postfix
+        state: restarted
+      when: not ansible_facts.services['postfix.service'].state == 'running'
+      register: restart_result
+
+    - name: Force process the mail queue if Postfix was already running
+      command: postqueue -f
+      when: ansible_facts.services['postfix.service'].state == 'running'
+      register: flush_result
+
+    - name: Print resolution summary
+      debug:
+        msg: >
+          {% if restart_result.changed %}
+          Mail Queue Fix: Postfix service was not running and has been restarted.
+          {% elif flush_result.changed %}
+          Mail Queue Fix: Postfix service was running. Forced a queue flush.
+          {% else %}
+          Mail Queue Fix: No direct action taken. Postfix appears to be running. Please check mail logs for specific errors.
+          {% endif %}
