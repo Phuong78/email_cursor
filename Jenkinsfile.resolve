@@ -2,6 +2,9 @@
 pipeline {
     agent any
 
+    tools {
+        ansible 'ansible-latest'
+    }
 
     parameters {
         string(name: 'TARGET_HOST', description: 'IP of the target VM')
@@ -35,14 +38,14 @@ pipeline {
                     
                     echo "Running Ansible playbook: ${playbook}"
                     
-                    // Lệnh ansible-playbook hoàn chỉnh
                     withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
-                    sh """
-                    ansible-playbook -i "${params.TARGET_HOST}," \\
-                                     -u ubuntu \\
-                                     --private-key /root/.ssh/nguyenp-key-pair.pem \\
-                                     ${playbook}
-                    """
+                        sh """
+                        ansible-playbook -i "${params.TARGET_HOST}," \\
+                                         -u ubuntu \\
+                                         --private-key /root/.ssh/nguyenp-key-pair.pem \\
+                                         ${playbook}
+                        """
+                    }
                 }
             }
         }
