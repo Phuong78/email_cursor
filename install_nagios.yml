@@ -63,4 +63,9 @@
         systemctl start nagios
         systemctl enable nagios # Tự khởi động khi reboot
         systemctl enable apache2
+    - name: Install stress-ng for incident simulation
+      apt:
+        name: stress-ng
+        state: present
+
       become: yes

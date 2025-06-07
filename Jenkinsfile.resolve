@@ -1,0 +1,37 @@
+// Jenkinsfile.resolve
+pipeline {
+    agent any
+    parameters {
+        string(name: 'TARGET_HOST', description: 'IP of the target VM')
+        string(name: 'INCIDENT_TYPE', description: 'Type of incident (DISK_FULL, CPU_HIGH, MAIL_QUEUE)')
+    }
+    stages {
+        stage('Resolving Incident') {
+            steps {
+                script {
+                    echo "Attempting to resolve ${params.INCIDENT_TYPE} on host ${params.TARGET_HOST}"
+
+                    def playbook = ""
+                    if (params.INCIDENT_TYPE == 'DISK_FULL') {
+                        playbook = 'ansible/disk_fix.yml'
+                    } else if (params.INCIDENT_TYPE == 'CPU_HIGH') {
+                        playbook = 'ansible/cpu_fix.yml'
+                    } else if (params.INCIDENT_TYPE == 'MAIL_QUEUE') {
+                        playbook = 'ansible/mail_fix.yml'
+                    } else {
+                        error "Invalid incident type: ${params.INCIDENT_TYPE}"
+                    }
+
+                    echo "Running Ansible playbook: ${playbook}"
+
+                    // Chạy playbook Ansible tương ứng
+                    sh """
+                    ansible-playbook -i "${params.TARGET_HOST}," \\
+                                     --private-key ~/.ssh/nguyenp-key-pair.pem \\
+                                     ${playbook}
+                    """
+                }
+            }
+        }
+    }
+}

@@ -1,10 +1,21 @@
-version: '3.8'
+#version: '3.8'
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      # Nginx sẽ nhận request từ bên ngoài tại port 8080
+      - "8080:8080"
+    volumes:
+      # Map file cấu hình nginx vào trong container
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - jenkins
   jenkins:
     image: jenkins/jenkins:lts
     user: root
+    restart: always
     ports:
-      - "8080:8080"
+      - "8090:8080"
       - "50000:50000"
     volumes:
       - jenkins-data:/var/jenkins_home
