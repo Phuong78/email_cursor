@@ -1,0 +1,66 @@
+# file: install_nagios.yml
+---
+- hosts: nagios_server
+  become: yes # Chạy các tác vụ với quyền sudo
+  tasks:
+    - name: Update APT cache and install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - build-essential
+        - apache2
+        - php
+        - libapache2-mod-php
+        - libgd-dev
+        - unzip
+
+    - name: Download Nagios Core
+      get_url:
+        url: https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.14.tar.gz
+        dest: /tmp/nagios.tar.gz
+
+    - name: Unarchive Nagios Core
+      unarchive:
+        src: /tmp/nagios.tar.gz
+        dest: /tmp
+        remote_src: yes # Báo cho Ansible là file đã ở trên máy chủ đích
+
+    - name: Configure and Compile Nagios Core
+      shell: |
+        ./configure --with-httpd-conf=/etc/apache2/sites-enabled
+        make all
+        make install
+        make install-init
+        make install-commandmode
+        make install-config
+        make install-webconf
+      args:
+        chdir: /tmp/nagios-4.4.14 # Chạy các lệnh shell trong thư mục này
+      become: yes
+
+    - name: Add www-data to nagios group
+      user:
+        name: www-data
+        groups: nagios
+        append: yes
+
+    - name: Create nagiosadmin user for web access
+      htpasswd:
+        path: /usr/local/nagios/etc/ht-users.userfile
+        name: nagiosadmin
+        password: "YourSecurePassword" # <-- THAY BẰNG MẬT KHẨU AN TOÀN
+        owner: nagios
+        group: nagios
+        mode: '0640'
+        create: yes
+
+    - name: Enable Apache modules and restart services
+      shell: |
+        a2enmod cgi rewrite
+        systemctl restart apache2
+        systemctl start nagios
+        systemctl enable nagios # Tự khởi động khi reboot
+        systemctl enable apache2
+      become: yes
