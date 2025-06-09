@@ -2,6 +2,7 @@
 pipeline {
     agent any
 
+    // 👇 THÊM KHỐI LỆNH QUAN TRỌNG NÀY VÀO
     tools {
         ansible 'ansible-latest'
     }
@@ -17,7 +18,7 @@ pipeline {
                 script {
                     echo "Starting CPU stress simulation on host ${params.TARGET_HOST}"
                     
-                    // Lệnh Ansible này sẽ chạy một tiến trình ngầm làm tăng tải CPU
+                    // Lệnh ansible bây giờ sẽ được tìm thấy
                     sh """
                     ansible all -i "${params.TARGET_HOST}," \\
                                      -u ubuntu \\
@@ -25,11 +26,6 @@ pipeline {
                                      -m shell \\
                                      -a "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
                     """
-                    // Giải thích lệnh stress-ng:
-                    // --cpu 1:       Chỉ tác động lên 1 core CPU.
-                    // --cpu-load 95: Đặt mục tiêu tải là 95%.
-                    // --timeout 300s: Tự động dừng sau 300 giây (5 phút).
-                    // nohup ... &:   Chạy tiến trình ở chế độ nền (background) và không bị tắt khi job Jenkins kết thúc.
                 }
             }
         }
