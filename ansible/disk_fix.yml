@@ -1,25 +1,71 @@
-# ansible/disk_fix.yml
+# file: ansible/disk_fix.yml
 ---
 - hosts: all
   become: yes
   tasks:
+    - name: Initialize the report file
+      # 'delegate_to: localhost' sẽ chạy task này trên máy Jenkins, không phải máy đích
+      # Điều này cho phép chúng ta tạo file báo cáo ngay trong workspace của Jenkins
+      delegate_to: localhost
+      connection: local
+      copy:
+        content: |
+          Resolution Report for Host: {{ inventory_hostname }}
+          Incident Type: DISK_FULL
+          Timestamp: {{ ansible_date_time.iso8601 }}
+          --------------------------------------------------
+        # File này sẽ được tạo trong thư mục ansible của workspace Jenkins
+        dest: "ansible/resolution_report.log" 
+        mode: '0644'
+
     - name: Find the largest log file in /var/log
-      shell: "find /var/log -type f -name '*.log' -printf '%s %p\n' | sort -nr | head -n 1 | awk '{print $2}'"
-      register: largest_log_file_result
+      shell: "find /var/log -type f -name '*.log' -printf '%s %p\\n' | sort -nr | head -n 1 | awk '{print $2}'"
+      register: find_result # <-- Đăng ký kết quả vào biến 'find_result'
       changed_when: false
 
     - name: Set fact for the largest log file path
       set_fact:
-        largest_log: "{{ largest_log_file_result.stdout }}"
+        largest_log: "{{ find_result.stdout }}"
 
-    - name: Archive last 10000 lines of the large log
-      shell: "tail -n 10000 {{ largest_log }} > {{ largest_log }}.archived_$(date +%F_%T)"
+    - name: Log the file that was found
+      delegate_to: localhost
+      connection: local
+      lineinfile:
+        path: "ansible/resolution_report.log"
+        line: "Found largest log file: {{ largest_log }}"
+      when: largest_log != ""
+
+    - name: Archive last 10k lines of the large log
+      shell: "tail -n 10000 {{ largest_log }} > {{ largest_log }}.archived_{{ ansible_date_time.iso8601 }}"
+      when: largest_log != ""
+      register: archive_result # <-- Đăng ký kết quả
+
+    - name: Log the archiving action
+      delegate_to: localhost
+      connection: local
+      lineinfile:
+        path: "ansible/resolution_report.log"
+        # Ghi lại kết quả của lệnh tail, nếu không có output thì ghi 'OK'
+        line: "Action: Archived last 10k lines. Result: {{ archive_result.stdout_lines | default('OK') }}"
       when: largest_log != ""
 
     - name: Clear the largest log file
       shell: "> {{ largest_log }}"
       when: largest_log != ""
 
-    - name: Print resolution summary
-      debug:
-        msg: "Disk Fix: Archived last 10k lines and cleared {{ largest_log }}. Please re-check Nagios in a few minutes."
+    - name: Log the clearing action
+      delegate_to: localhost
+      connection: local
+      lineinfile:
+        path: "ansible/resolution_report.log"
+        line: "Action: Cleared the log file successfully."
+      when: largest_log != ""
+
+    - name: Add final summary to the report
+      delegate_to: localhost
+      connection: local
+      blockinfile:
+        path: "ansible/resolution_report.log"
+        block: |
+
+          Resolution script for DISK_FULL completed.
