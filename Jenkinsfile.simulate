@@ -1,25 +1,35 @@
-// Jenkinsfile.simulate
+// file: Jenkinsfile.simulate
 pipeline {
     agent any
-    parameters {
-        string(name: 'TARGET_HOST', description: 'IP of the target customer VM')
-        string(name: 'INCIDENT_TYPE', defaultValue: 'CPU_HIGH', description: 'Type of incident to simulate')
+
+    tools {
+        ansible 'ansible-latest'
     }
+
+    parameters {
+        string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '3.91.186.154')
+        string(name: 'INCIDENT_TYPE', description: 'Loại sự cố', defaultValue: 'CPU_HIGH')
+    }
+
     stages {
-        stage('Simulate Incident') {
+        stage('Simulate CPU Stress') {
             steps {
                 script {
-                    echo "Simulating ${params.INCIDENT_TYPE} on host ${params.TARGET_HOST}"
-                    // Sử dụng Ansible để chạy lệnh stress từ xa
-                    // -i "${params.TARGET_HOST}," tạo một inventory động chỉ chứa máy chủ đích
+                    echo "Starting CPU stress simulation on host ${params.TARGET_HOST}"
+                    
+                    // Lệnh Ansible này sẽ chạy một tiến trình ngầm làm tăng tải CPU
                     sh """
                     ansible all -i "${params.TARGET_HOST}," \\
-                            -u ubuntu \\
-                            --private-key ~/.ssh/nguyenp-key-pair.pem \\
-                            -m shell \\
-                            -a "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
+                                     -u ubuntu \\
+                                     --private-key /root/.ssh/nguyenp-key-pair.pem \\
+                                     -m shell \\
+                                     -a "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
                     """
-                    // Lệnh trên sẽ chạy ngầm (nohup &) một tiến trình làm CPU tăng 95% trong 300 giây (5 phút)
+                    // Giải thích lệnh stress-ng:
+                    // --cpu 1:       Chỉ tác động lên 1 core CPU.
+                    // --cpu-load 95: Đặt mục tiêu tải là 95%.
+                    // --timeout 300s: Tự động dừng sau 300 giây (5 phút).
+                    // nohup ... &:   Chạy tiến trình ở chế độ nền (background) và không bị tắt khi job Jenkins kết thúc.
                 }
             }
         }
