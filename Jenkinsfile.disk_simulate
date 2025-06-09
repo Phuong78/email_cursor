@@ -1,0 +1,37 @@
+// file: Jenkinsfile.disk_simulate
+pipeline {
+    agent any
+
+    // Không cần khối 'tools' vì Ansible đã được cài trực tiếp
+
+    parameters {
+        string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '3.91.186.154')
+        // Giữ lại tham số này để nhất quán và dễ tích hợp sau này
+        string(name: 'INCIDENT_TYPE', description: 'Loại sự cố (chỉ đọc)', defaultValue: 'DISK_FULL')
+    }
+
+    stages {
+        stage('Simulate Disk Full Incident') {
+            steps {
+                script {
+                    echo "Starting Disk Full simulation on host ${params.TARGET_HOST}"
+                    
+                    // Lệnh này sẽ tạo 1 file rác dung lượng 1GB trong thư mục /tmp
+                    def command_to_run = "dd if=/dev/zero of=/tmp/large_dummy_file bs=1M count=1024"
+                    
+                    echo "Executing remote command: ${command_to_run}"
+                    
+                    withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
+                        sh """
+                        ansible all -i "${params.TARGET_HOST}," \\
+                                     -u ubuntu \\
+                                     --private-key /root/.ssh/nguyenp-key-pair.pem \\
+                                     -m shell \\
+                                     -a "${command_to_run}"
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
