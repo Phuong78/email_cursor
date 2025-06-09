@@ -2,39 +2,25 @@
 pipeline {
     agent any
 
-    // KHỐI 'tools' ĐÃ ĐƯỢC XÓA BỎ VÌ ANSIBLE ĐÃ ĐƯỢC CÀI ĐẶT TRỰC TIẾP
-    
     parameters {
-        // Sử dụng 'choice' để có menu dropdown trên giao diện Jenkins
-        choice(name: 'INCIDENT_TYPE', choices: ['CPU_HIGH', 'DISK_FULL'], description: 'Loại sự cố muốn giả lập')
         string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '3.91.186.154')
+        string(name: 'INCIDENT_TYPE', description: 'Loại sự cố', defaultValue: 'CPU_HIGH')
     }
 
     stages {
-        stage('Simulate Incident') {
+        stage('Simulate CPU Stress') {
             steps {
                 script {
-                    echo "Preparing to simulate ${params.INCIDENT_TYPE} on host ${params.TARGET_HOST}"
+                    echo "Starting CPU stress simulation on host ${params.TARGET_HOST}"
                     
-                    def command_to_run = ""
-
-                    if (params.INCIDENT_TYPE == 'CPU_HIGH') {
-                        echo "Selected simulation: High CPU"
-                        command_to_run = "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
-                    } else if (params.INCIDENT_TYPE == 'DISK_FULL') {
-                        echo "Selected simulation: Disk Full"
-                        command_to_run = "dd if=/dev/zero of=/tmp/large_dummy_file bs=1M count=1024"
-                    }
-                    
-                    echo "Executing remote command: ${command_to_run}"
-                    
+                    // 👇 BỌC LỆNH SH TRONG KHỐI withEnv NÀY
                     withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
                         sh """
                         ansible all -i "${params.TARGET_HOST}," \\
-                                     -u ubuntu \\
-                                     --private-key /root/.ssh/nguyenp-key-pair.pem \\
-                                     -m shell \\
-                                     -a "${command_to_run}"
+                                         -u ubuntu \\
+                                         --private-key /root/.ssh/nguyenp-key-pair.pem \\
+                                         -m shell \\
+                                         -a "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
                         """
                     }
                 }
