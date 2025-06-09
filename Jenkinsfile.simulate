@@ -2,7 +2,6 @@
 pipeline {
     agent any
 
-
     parameters {
         string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '3.91.186.154')
         string(name: 'INCIDENT_TYPE', description: 'Loại sự cố', defaultValue: 'CPU_HIGH')
@@ -14,14 +13,16 @@ pipeline {
                 script {
                     echo "Starting CPU stress simulation on host ${params.TARGET_HOST}"
                     
-                    // Lệnh ansible bây giờ sẽ được tìm thấy
-                    sh """
-                    ansible all -i "${params.TARGET_HOST}," \\
-                                     -u ubuntu \\
-                                     --private-key /root/.ssh/nguyenp-key-pair.pem \\
-                                     -m shell \\
-                                     -a "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
-                    """
+                    // 👇 BỌC LỆNH SH TRONG KHỐI withEnv NÀY
+                    withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
+                        sh """
+                        ansible all -i "${params.TARGET_HOST}," \\
+                                         -u ubuntu \\
+                                         --private-key /root/.ssh/nguyenp-key-pair.pem \\
+                                         -m shell \\
+                                         -a "nohup stress-ng --cpu 1 --cpu-load 95 --timeout 300s &"
+                        """
+                    }
                 }
             }
         }
