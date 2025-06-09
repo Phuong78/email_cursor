@@ -2,8 +2,14 @@
 pipeline {
     agent any
 
-    tools {
-        ansible 'ansible-latest'
+    // Khối 'tools' đã được xóa bỏ vì Ansible đã được cài đặt trực tiếp
+
+    // ======================================================
+    // THÊM VÀO: Lấy Webhook URL từ Jenkins Credentials
+    // ID 'n8n-report-webhook-url' phải khớp với ID bạn đã tạo trong Jenkins
+    // ======================================================
+    environment {
+        N8N_WEBHOOK_URL = credentials('n8n-report-webhook-url')
     }
 
     parameters {
@@ -46,6 +52,49 @@ pipeline {
                                          ${playbook}
                         """
                     }
+                }
+            }
+        }
+    } // <-- Kết thúc khối 'stages'
+    
+    // ======================================================
+    // THÊM VÀO: Gửi báo cáo sau khi các stage hoàn thành
+    // Khối 'post' sẽ luôn chạy sau khi các stage kết thúc, dù thành công hay thất bại
+    // ======================================================
+    post {
+        always {
+            script {
+                echo "Entering post-build reporting stage..."
+                // Kiểm tra xem file báo cáo có tồn tại không
+                if (fileExists('ansible/resolution_report.log')) {
+                    echo "Report file found. Reading and sending to n8n..."
+                    
+                    // Đọc nội dung file báo cáo
+                    def reportContent = readFile('ansible/resolution_report.log')
+                    
+                    // Chuẩn bị dữ liệu JSON để gửi đi
+                    // Chúng ta cần escape các ký tự đặc biệt trong reportContent để tạo thành một chuỗi JSON hợp lệ
+                    def jsonPayload = """
+                    {
+                        "jobName": "${env.JOB_NAME}",
+                        "buildNumber": ${env.BUILD_NUMBER},
+                        "incidentType": "${params.INCIDENT_TYPE}",
+                        "targetHost": "${params.TARGET_HOST}",
+                        "buildStatus": "${currentBuild.currentResult}",
+                        "report": "${reportContent.replaceAll('"', '\\\\"').replaceAll('\\n', '\\\\n')}"
+                    }
+                    """
+
+                    // Dùng curl để gửi dữ liệu JSON đến n8n webhook
+                    sh """
+                    curl -X POST -H "Content-Type: application/json" -d '${jsonPayload}' ${env.N8N_WEBHOOK_URL}
+                    """
+                    
+                    // Dọn dẹp file báo cáo sau khi đã gửi đi
+                    sh "rm ansible/resolution_report.log"
+
+                } else {
+                    echo "No report file found to send."
                 }
             }
         }
