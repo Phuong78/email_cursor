@@ -2,10 +2,6 @@
 pipeline {
     agent any
 
-    // 👇 THÊM KHỐI LỆNH QUAN TRỌNG NÀY VÀO
-    tools {
-        ansible 'ansible-latest'
-    }
 
     parameters {
         string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '3.91.186.154')
