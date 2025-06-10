@@ -66,7 +66,7 @@ pipeline {
                 if (currentBuild.currentResult == 'SUCCESS' && env.CUSTOMER_IP) {
                     echo "Build thành công. Gửi thông tin khách hàng và IP đến n8n..."
                     
-                    def n8nWebhookUrl = "http://localhost:5678/webhook-test/ad443f1d-001d-4e19-8578-de3d262602f0"
+                    def n8nWebhookUrl = "http://n8n:5678/webhook-test/ad443f1d-001d-4e19-8578-de3d262602f0"
 
                     def jsonPayload = """
                     {
