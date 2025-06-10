@@ -1,22 +1,43 @@
-// Jenkinsfile
+// file: Jenkinsfile
 pipeline {
     agent any
 
-    tools {
-        terraform 'terraform-latest'
+    // ======================================================
+    // THÊM VÀO: ĐỊNH NGHĨA TRIGGER BẰNG CODE
+    // ======================================================
+    triggers {
+        genericWebhookTrigger(
+            // Biến sẽ được trích xuất từ URL (?CUSTOMER_NAME=...&CUSTOMER_EMAIL=...)
+            genericVariables: [
+                [key: 'CUSTOMER_NAME', regexpFilter: ''],
+                [key: 'CUSTOMER_EMAIL', regexpFilter: ''],
+                [key: 'QUOTA', regexpFilter: '']
+            ],
+
+            // Token để xác thực
+            token: 'A_SECRET_TOKEN_FOR_CUSTOMER_JOB',
+
+            // In ra log để gỡ lỗi
+            printPostContent: true,
+            printContributedVariables: true,
+            
+            causeString: 'Triggered by Generic Webhook'
+        )
     }
 
     parameters {
+        // Khối này vẫn cần thiết để job nhận diện các tham số
         string(name: 'CUSTOMER_NAME', defaultValue: '', description: 'Ten cua khach hang moi')
         string(name: 'CUSTOMER_EMAIL', defaultValue: '', description: 'Email lien he cua khach hang')
         string(name: 'QUOTA', defaultValue: '20', description: 'Dung luong (GB) cap cho khach hang')
     }
 
     stages {
+        // ... CÁC STAGES CŨ CỦA BẠN VẪN GIỮ NGUYÊN ...
         stage('Checkout Source Code') {
             steps {
-                // Jenkins tự checkout code khi dùng SCM
                 echo "Mã nguồn đã được checkout."
+                checkout scm
             }
         }
         
@@ -24,10 +45,7 @@ pipeline {
             steps {
                 dir('infra-customer') {
                     script {
-                        // BƯỚC GỠ LỖI: Kiểm tra các tham số nhận được
                         echo "Parameters received: CUSTOMER_NAME=${params.CUSTOMER_NAME}, CUSTOMER_EMAIL=${params.CUSTOMER_EMAIL}"
-                        
-                        // Tạo một tên workspace an toàn từ tên khách hàng
                         def workspaceName = "${params.CUSTOMER_NAME}".replaceAll('[^a-zA-Z0-9_-]', '')
 
                         if (workspaceName.isEmpty()) {
@@ -35,19 +53,9 @@ pipeline {
                         }
 
                         echo "Đang chuẩn bị workspace: ${workspaceName}"
-                        
                         sh 'terraform init -reconfigure'
-
-                        // BƯỚC GỠ LỖI: In ra danh sách các workspace hiện có
-                        echo "Các workspace hiện tại:"
-                        sh 'terraform workspace list'
-
-                        // Tách lệnh tạo và chọn workspace để rõ ràng hơn
-                        // Cú pháp `|| true` để bỏ qua lỗi nếu workspace đã tồn tại
                         sh "terraform workspace new ${workspaceName} || true"
                         sh "terraform workspace select ${workspaceName}"
-
-                        // BƯỚC GỠ LỖI: In ra workspace đang được sử dụng
                         echo "Workspace đang được chọn:"
                         sh 'terraform workspace show'
                         
