@@ -1,29 +1,33 @@
-// file: Jenkinsfile
+// file: Jenkinsfile - PHIÊN BẢN SỬA LỖI CUỐI CÙNG
 pipeline {
     agent any
 
     // ======================================================
-    // THÊM VÀO: ĐỊNH NGHĨA TRIGGER BẰNG CODE
+    // SỬA LẠI: ĐỊNH NGHĨA TRIGGER BẰNG KHỐI 'properties'
     // ======================================================
-    triggers {
-        genericWebhookTrigger(
-            // Biến sẽ được trích xuất từ URL (?CUSTOMER_NAME=...&CUSTOMER_EMAIL=...)
-            genericVariables: [
-                [key: 'CUSTOMER_NAME', regexpFilter: ''],
-                [key: 'CUSTOMER_EMAIL', regexpFilter: ''],
-                [key: 'QUOTA', regexpFilter: '']
-            ],
-
-            // Token để xác thực
-            token: 'A_SECRET_TOKEN_FOR_CUSTOMER_JOB',
-
-            // In ra log để gỡ lỗi
-            printPostContent: true,
-            printContributedVariables: true,
-            
-            causeString: 'Triggered by Generic Webhook'
-        )
+    options {
+        // Tùy chọn này giúp job không bị chạy 2 lần khi có thay đổi SCM và webhook
+        overrideIndexTriggers(false)
     }
+    properties([
+        pipelineTriggers([
+            // Sử dụng class 'GenericTrigger' của plugin
+            [$class: 'GenericTrigger',
+                // Trích xuất các biến từ URL (?CUSTOMER_NAME=...&CUSTOMER_EMAIL=...)
+                genericVariables: [
+                    [key: 'CUSTOMER_NAME', regexpFilter: ''],
+                    [key: 'CUSTOMER_EMAIL', regexpFilter: ''],
+                    [key: 'QUOTA', regexpFilter: '']
+                ],
+                // Token để xác thực
+                token: 'A_SECRET_TOKEN_FOR_CUSTOMER_JOB',
+                // In log để gỡ lỗi
+                printPostContent: true,
+                printContributedVariables: true,
+                causeString: 'Triggered by Generic Webhook'
+            ]
+        ])
+    ])
 
     parameters {
         // Khối này vẫn cần thiết để job nhận diện các tham số
@@ -33,7 +37,6 @@ pipeline {
     }
 
     stages {
-        // ... CÁC STAGES CŨ CỦA BẠN VẪN GIỮ NGUYÊN ...
         stage('Checkout Source Code') {
             steps {
                 echo "Mã nguồn đã được checkout."
