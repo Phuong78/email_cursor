@@ -7,21 +7,7 @@ pipeline {
     // 1. Đổi tên 'pipelineTriggers' thành 'triggers'
     // 2. Chuyển khối này ra ngoài 'options'
     // ======================================================
-    triggers {
-        GenericTrigger(
-            genericVariables: [
-                [key: 'CUSTOMER_NAME', value: '$.body.customerName'],
-                [key: 'CUSTOMER_EMAIL', value: '$.body.customerEmail'],
-                [key: 'QUOTA', value: '$.body.quota']
-            ],
-            // Token để xác thực
-            token: 'A_SECRET_TOKEN_FOR_CUSTOMER_JOB',
-            // In log để gỡ lỗi
-            printPostContent: true,
-            printContributedVariables: true,
-            causeString: 'Triggered by Generic Webhook'
-        )
-    }
+    
 
     parameters {
         // Khối này vẫn cần thiết để job nhận diện các tham số
@@ -57,7 +43,7 @@ pipeline {
                         sh "terraform workspace select ${workspaceName}"
                         
                         echo "Đang chạy terraform apply..."
-                        sh "terraform apply -auto-approve -var customer_name='${params.CUSTOMER_NAME}' -var customer_email='${params.CUSTOMER_EMAIL}'"
+                        sh "terraform apply -auto-approve -var customer_name='${params.CUSTOMER_NAME}' -var customer_email='${params.CUSTOMER_EMAIL}' -var quota=${params.QUOTA}"
                     }
                 }
             }

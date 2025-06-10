@@ -8,6 +8,9 @@ export default function Intro({ customers, setCustomers }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
+  // =================================================================
+  // THAY ĐỔI QUAN TRỌNG NẰM TRONG HÀM NÀY
+  // =================================================================
   const handleAdd = async e => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -16,18 +19,32 @@ export default function Intro({ customers, setCustomers }) {
     const jenkinsUrl = process.env.REACT_APP_JENKINS_URL;
     const token = process.env.REACT_APP_JENKINS_TOKEN;
 
-    const triggerUrl = `${jenkinsUrl}/generic-webhook-trigger/invoke?token=${token}&CUSTOMER_NAME=${encodeURIComponent(name)}&CUSTOMER_EMAIL=${encodeURIComponent(email)}&QUOTA=${quota}`;
+    // URL bây giờ chỉ chứa token, không chứa tham số dữ liệu
+    const triggerUrl = `${jenkinsUrl}/generic-webhook-trigger/invoke?token=${token}`;
     
     try {
-      const response = await fetch(triggerUrl, { method: 'POST' });
+      // Dữ liệu sẽ được gửi trong body của request dưới dạng JSON
+      const response = await fetch(triggerUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            customerName: name,
+            customerEmail: email,
+            // Đảm bảo gửi quota dưới dạng số
+            quota: Number(quota) 
+        })
+      });
+
       if (response.ok) {
         setMessage('✅ Yêu cầu tạo khách hàng đã được gửi thành công! Máy chủ mới sẽ được tạo trong vài phút.');
-        // Thêm khách hàng mới vào danh sách (không cần IP)
         setCustomers([...customers, { name, email, quota, ip: 'Đang tạo...' }]);
         setShowForm(false);
         setName(''); setEmail(''); setQuota(20);
       } else {
-        setMessage(`❌ Lỗi khi gửi yêu cầu: ${response.status} ${await response.text()}`);
+        const errorText = await response.text();
+        setMessage(`❌ Lỗi khi gửi yêu cầu: ${response.status} ${errorText}`);
       }
     } catch (error) {
       setMessage(`❌ Lỗi kết nối: ${error.message}`);
@@ -39,16 +56,15 @@ export default function Intro({ customers, setCustomers }) {
   return (
     <div>
       <h2>Giới thiệu hệ thống Email Service Demo</h2>
-      <p>Hệ thống trình diễn một quy trình DevOps hoàn chỉnh cho việc cung cấp và quản lý dịch vụ email đa khách hàng trên nền tảng AWS.</p>
+      <p>Hệ thống trình diễn một quy trình DevOps hoàn chỉnh...</p>
       
-      {/* NỘI DUNG MỚI */}
       <h4>Ưu điểm nổi bật của hệ thống:</h4>
       <ul>
-        <li><b>Tự động hóa Cung cấp Hạ tầng (IaC):</b> Sử dụng Terraform để tạo mới và quản lý hạ tầng một cách nhất quán, giảm thiểu sai sót thủ công.</li>
-        <li><b>Quy trình CI/CD liền mạch:</b> Jenkins điều phối các kịch bản tự động, từ việc tạo khách hàng mới đến việc sửa lỗi.</li>
-        <li><b>Giám sát & Cảnh báo Chủ động:</b> Nagios liên tục theo dõi sức khỏe hệ thống và gửi cảnh báo tức thời khi có sự cố.</li>
-        <li><b>Khả năng Tự khắc phục:</b> Tích hợp kịch bản sửa lỗi tự động, cho phép hệ thống phản ứng nhanh với các sự cố phổ biến.</li>
-        <li><b>Giao diện Quản lý Tập trung:</b> Cung cấp một nơi duy nhất để theo dõi và thực hiện các tác vụ quản trị quan trọng.</li>
+        <li><b>Tự động hóa Cung cấp Hạ tầng (IaC)</b></li>
+        <li><b>Quy trình CI/CD liền mạch</b></li>
+        <li><b>Giám sát & Cảnh báo Chủ động</b></li>
+        <li><b>Khả năng Tự khắc phục</b></li>
+        <li><b>Giao diện Quản lý Tập trung</b></li>
       </ul>
 
       <button onClick={() => { setShowForm(!showForm); setMessage(''); }}>

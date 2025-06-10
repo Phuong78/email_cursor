@@ -23,3 +23,9 @@ variable "customer_email" {
   description = "Contact email of the new customer"
   type        = string
 }
+
+variable "quota" {
+  description = "Disk quota for the customer in GB"
+  type        = number
+  default     = 20
+}
