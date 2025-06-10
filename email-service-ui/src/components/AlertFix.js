@@ -1,4 +1,3 @@
-// file: frontend/src/components/AlertFix.js
 import { useState } from 'react';
 
 const incidentOptions = [
@@ -7,27 +6,26 @@ const incidentOptions = [
   { id: 'MAIL_QUEUE', name: 'Sự cố hàng đợi Mail' },
 ];
 
-// Component bây giờ nhận 'customers' từ App.js
-export default function AlertFix({ customers = [] }) {
+// Component không cần nhận 'customers' nữa
+export default function AlertFix() {
   const [selectedIncident, setSelectedIncident] = useState('');
-  const [targetHost, setTargetHost] = useState(''); // Sẽ lưu IP của server được chọn
+  // Quay lại sử dụng ô nhập IP thủ công
+  const [targetHost, setTargetHost] = useState(''); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedIncident || !targetHost) {
-      setMessage('❌ Vui lòng chọn sự cố và máy chủ.');
+      setMessage('❌ Vui lòng chọn sự cố và nhập IP máy chủ.');
       return;
     }
+    // ... (logic fetch giữ nguyên như cũ)
     setIsSubmitting(true);
     setMessage('⚙️ Đang gửi yêu cầu sửa lỗi đến Jenkins...');
-
     const jenkinsUrl = process.env.REACT_APP_JENKINS_URL;
     const token = process.env.REACT_APP_RESOLVE_JOB_TOKEN;
-
     const triggerUrl = `${jenkinsUrl}/generic-webhook-trigger/invoke?token=${token}&TARGET_HOST=${targetHost}&INCIDENT_TYPE=${selectedIncident}`;
-
     try {
       const response = await fetch(triggerUrl, { method: 'POST' });
       if (response.ok) {
@@ -45,25 +43,26 @@ export default function AlertFix({ customers = [] }) {
   return (
     <div>
       <h2>Khắc phục Sự cố Tự động</h2>
-      <p>Chọn máy chủ và loại sự cố để chạy kịch bản sửa lỗi tự động.</p>
+      <p>Chọn loại sự cố và nhập IP máy chủ đích để chạy kịch bản sửa lỗi.</p>
       
       <form onSubmit={handleSubmit} style={{ marginTop: 10, maxWidth: 400, background: '#f8f8f8', padding: 15, borderRadius: 8 }}>
         
-        {/* THAY THẾ Ô NHẬP IP BẰNG MENU DROPDOWN */}
+        {/* Quay lại sử dụng ô nhập IP thủ công */}
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 4 }}>Chọn Máy chủ Khách hàng</label>
-          <select value={targetHost} onChange={e => setTargetHost(e.target.value)} required style={{ width: '100%', padding: 8 }}>
-            <option value="">-- Vui lòng chọn máy chủ --</option>
-            {customers.map((customer) => (
-              customer.ip && <option key={customer.ip} value={customer.ip}>{customer.name} ({customer.ip})</option>
-            ))}
-          </select>
+          <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 4 }}>Máy chủ đích (IP)</label>
+          <input 
+            value={targetHost} 
+            onChange={e => setTargetHost(e.target.value)} 
+            placeholder="Nhập IP máy chủ cần sửa lỗi" 
+            required 
+            style={{ width: '100%', padding: 8 }} 
+          />
         </div>
 
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 4 }}>Chọn loại Sự cố</label>
           <select value={selectedIncident} onChange={e => setSelectedIncident(e.target.value)} required style={{ width: '100%', padding: 8 }}>
-            <option value="">-- Vui lòng chọn sự cố --</option>
+            <option value="">-- Vui lòng chọn --</option>
             {incidentOptions.map(opt => (
               <option key={opt.id} value={opt.id}>{opt.name}</option>
             ))}

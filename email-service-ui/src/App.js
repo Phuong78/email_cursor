@@ -42,7 +42,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Intro customers={customers} setCustomers={setCustomers} />} />
           <Route path="/nagios" element={<Nagios />} />
-          <Route path="/alert-fix" element={<AlertFix customers={customers} />} />
+          <Route path="/alert-fix" element={<AlertFix />} />
           <Route path="/log-ssh" element={<LogSSH />} />
           <Route path="/customers" element={<CustomerList customers={customers} />} />
           <Route path="/simulate-incident" element={<IncidentSimulator />} />
