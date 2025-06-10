@@ -8,22 +8,20 @@ export default function Intro({ customers, setCustomers }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
-  // =================================================================
-  // THAY ĐỔI QUAN TRỌNG NẰM TRONG HÀM NÀY
-  // =================================================================
   const handleAdd = async e => {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage('⚙️ Đang gửi yêu cầu tạo khách hàng đến Jenkins...');
 
-    const jenkinsUrl = process.env.REACT_APP_JENKINS_URL;
+    const jenkinsUrl = process.env.REACT_APP_JENKINS_URL; // Đây là http://localhost:8080
     const token = process.env.REACT_APP_JENKINS_TOKEN;
 
-    // URL bây giờ chỉ chứa token, không chứa tham số dữ liệu
-    const triggerUrl = `${jenkinsUrl}/generic-webhook-trigger/invoke?token=${token}`;
+    // =================================================================
+    // THAY ĐỔI Ở ĐÂY: Thêm '/jenkins' vào đường dẫn để khớp với Nginx
+    // =================================================================
+    const triggerUrl = `${jenkinsUrl}/jenkins/generic-webhook-trigger/invoke?token=${token}`;
     
     try {
-      // Dữ liệu sẽ được gửi trong body của request dưới dạng JSON
       const response = await fetch(triggerUrl, {
         method: 'POST',
         headers: {
@@ -32,7 +30,6 @@ export default function Intro({ customers, setCustomers }) {
         body: JSON.stringify({
             customerName: name,
             customerEmail: email,
-            // Đảm bảo gửi quota dưới dạng số
             quota: Number(quota) 
         })
       });
