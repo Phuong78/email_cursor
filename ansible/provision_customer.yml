@@ -5,8 +5,7 @@
     nagios_server_ip: "44.204.24.61"
 
   tasks:
-    # --- PHẦN 1 & 2: GIỮ NGUYÊN ---
-    - name: Cài đặt Postfix không cần hỏi
+    - name: Cài đặt Postfix
       shell: |
         debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
         debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
@@ -15,30 +14,18 @@
         warn: no
       changed_when: true
 
-    - name: Đảm bảo dịch vụ Postfix đang chạy
-      service:
-        name: postfix
-        state: started
-        enabled: yes
-
     - name: Cài đặt Nagios client (NRPE) và các plugin
       apt:
-        name:
-          - nagios-nrpe-server
-          - nagios-plugins
+        name: [nagios-nrpe-server, nagios-plugins]
         state: present
         update_cache: yes
 
-    - name: Cấu hình NRPE để cho phép Nagios Server kết nối
+    - name: Cấu hình NRPE
       template:
         src: templates/nrpe.cfg.j2
         dest: /etc/nagios/nrpe.cfg
-        owner: root
-        group: root
-        mode: '0644'
       notify: Restart NRPE
 
-    # --- PHẦN 3: TẠO USER 'newcust' (GIỮ NGUYÊN) ---
     - name: Tạo user 'newcust'
       ansible.builtin.user:
         name: newcust
@@ -53,21 +40,15 @@
         groups: sudo
         append: yes
 
-    # ====================================================================
-    # SỬA LỖI CUỐI CÙNG: SỬA TRỰC TIẾP FILE CẤU HÌNH CỦA CLOUD-INIT
-    # Tôi đã xóa task cũ và thay bằng task này để đảm bảo chỉ sửa đúng 1 file.
-    # ====================================================================
-    - name: Final override to ensure password authentication is enabled
-      shell: |
-        # Đợi một chút để các tiến trình cloud-init khác có thể hoàn tất
-        sleep 5 
-        # Dùng lệnh sed để tìm và thay thế 'PasswordAuthentication no' thành 'yes'
-        sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
-        # Khởi động lại sshd ngay lập tức để áp dụng
-        systemctl restart sshd
-      changed_when: false # Tắt cảnh báo "changed" cho task này
+    - name: Cho phép SSH bằng mật khẩu trong file của cloud-init
+      lineinfile:
+        path: /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication yes'
+        state: present
+        create: yes
+      notify: Restart sshd
 
-  # Khối handlers vẫn giữ nguyên, sẽ được gọi bởi 'notify' ở trên
   handlers:
     - name: Restart NRPE
       service:
