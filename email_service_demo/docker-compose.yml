@@ -11,7 +11,8 @@ services:
     depends_on:
       - jenkins
   jenkins:
-    image: jenkins/jenkins:lts
+    build:
+      context: ./jenkins_config
     user: root
     restart: always
     ports:
