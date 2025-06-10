@@ -4,7 +4,7 @@ provider "aws" {
 
 # TẠO MỘT SECURITY GROUP RIÊNG CHO MỖI KHÁCH HÀNG
 resource "aws_security_group" "customer_sg" {
-  name        = "sg-customer-${var.customer_name}"
+  name        = "customer-sg-${var.customer_name}"
   description = "Allow SSH traffic for customer"
   vpc_id      = data.aws_vpc.default.id
 
@@ -28,7 +28,7 @@ resource "aws_security_group" "customer_sg" {
   }
 
   tags = {
-    Name = "sg-customer-${var.customer_name}"
+    Name = "customer-sg-${var.customer_name}"
   }
 }
 
