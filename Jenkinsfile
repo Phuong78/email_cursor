@@ -1,38 +1,37 @@
-// file: Jenkinsfile - PHIÊN BẢN SỬA LỖI CÚ PHÁP
+// file: Jenkinsfile - PHIÊN BẢN ĐÃ SỬA LỖI
 pipeline {
     agent any
 
     // ======================================================
-    // SỬA LẠI: ĐỊNH NGHĨA TRIGGER BẰNG KHỐI 'options'
+    // SỬA LỖI Ở ĐÂY:
+    // 1. Đổi tên 'pipelineTriggers' thành 'triggers'
+    // 2. Chuyển khối này ra ngoài 'options'
     // ======================================================
-    options {
-        // Đặt trigger trong pipelineTriggers bên trong options
-        pipelineTriggers([
-            [$class: 'GenericTrigger',
-                // Trích xuất các biến từ URL
-                genericVariables: [
-                    [key: 'CUSTOMER_NAME', regexpFilter: ''],
-                    [key: 'CUSTOMER_EMAIL', regexpFilter: ''],
-                    [key: 'QUOTA', regexpFilter: '']
-                ],
-                // Token để xác thực
-                token: 'A_SECRET_TOKEN_FOR_CUSTOMER_JOB',
-                // In log để gỡ lỗi
-                printPostContent: true,
-                printContributedVariables: true,
-                causeString: 'Triggered by Generic Webhook'
-            ]
-        ])
+    triggers {
+        GenericTrigger(
+            genericVariables: [
+                [key: 'CUSTOMER_NAME', value: '$.body.customerName'],
+                [key: 'CUSTOMER_EMAIL', value: '$.body.customerEmail'],
+                [key: 'QUOTA', value: '$.body.quota']
+            ],
+            // Token để xác thực
+            token: 'A_SECRET_TOKEN_FOR_CUSTOMER_JOB',
+            // In log để gỡ lỗi
+            printPostContent: true,
+            printContributedVariables: true,
+            causeString: 'Triggered by Generic Webhook'
+        )
     }
 
     parameters {
         // Khối này vẫn cần thiết để job nhận diện các tham số
-        string(name: 'CUSTOMER_NAME', defaultValue: '', description: 'Ten cua khach hang moi')
-        string(name: 'CUSTOMER_EMAIL', defaultValue: '', description: 'Email lien he cua khach hang')
+        string(name: 'CUSTOMER_NAME', defaultValue: 'Test', description: 'Ten cua khach hang moi')
+        string(name: 'CUSTOMER_EMAIL', defaultValue: 'test@example.com', description: 'Email lien he cua khach hang')
         string(name: 'QUOTA', defaultValue: '20', description: 'Dung luong (GB) cap cho khach hang')
     }
 
     stages {
+        // Giữ nguyên các stage như cũ
         stage('Checkout Source Code') {
             steps {
                 echo "Mã nguồn đã được checkout."
@@ -52,13 +51,12 @@ pipeline {
                         }
 
                         echo "Đang chuẩn bị workspace: ${workspaceName}"
+                        // Chúng ta sẽ sử dụng Jenkins Credentials ở các bước sau
                         sh 'terraform init -reconfigure'
                         sh "terraform workspace new ${workspaceName} || true"
                         sh "terraform workspace select ${workspaceName}"
-                        echo "Workspace đang được chọn:"
-                        sh 'terraform workspace show'
                         
-                        echo "Đang chạy terraform apply trong workspace '${workspaceName}'..."
+                        echo "Đang chạy terraform apply..."
                         sh "terraform apply -auto-approve -var customer_name='${params.CUSTOMER_NAME}' -var customer_email='${params.CUSTOMER_EMAIL}'"
                     }
                 }

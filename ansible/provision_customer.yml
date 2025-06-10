@@ -1,0 +1,51 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    # BẠN CẦN THAY ĐỊA CHỈ IP NÀY BẰNG IP CỦA NAGIOS SERVER CỦA BẠN
+    nagios_server_ip: "44.204.24.61" 
+
+  tasks:
+    # --- PHẦN 1: CÀI ĐẶT MAIL SERVER (POSTFIX) ---
+    - name: Cài đặt Postfix không cần hỏi
+      # Lệnh này sẽ tự động chọn các cấu hình mặc định cho Postfix
+      shell: |
+        debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
+        debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+        apt-get install -y postfix
+      args:
+        warn: no
+      changed_when: true
+
+    - name: Đảm bảo dịch vụ Postfix đang chạy và tự khởi động khi boot
+      service:
+        name: postfix
+        state: started
+        enabled: yes
+
+    # --- PHẦN 2: CÀI ĐẶT NAGIOS CLIENT (NRPE) ---
+    - name: Cài đặt Nagios client (NRPE) và các plugin
+      apt:
+        name:
+          - nagios-nrpe-server
+          - nagios-plugins
+        state: present
+        update_cache: yes
+
+    - name: Cấu hình NRPE để cho phép Nagios Server kết nối
+      # Sử dụng module 'template' để tạo file cấu hình từ một file mẫu
+      template:
+        src: templates/nrpe.cfg.j2 # File mẫu sẽ được tạo ở bước tiếp theo
+        dest: /etc/nagios/nrpe.cfg
+        owner: root
+        group: root
+        mode: '0644'
+      # Khi file cấu hình thay đổi, chúng ta cần restart lại dịch vụ
+      notify: Restart NRPE
+
+  # 'handlers' chỉ được gọi khi có một task báo 'notify'
+  handlers:
+    - name: Restart NRPE
+      service:
+        name: nagios-nrpe-server
+        state: restarted
