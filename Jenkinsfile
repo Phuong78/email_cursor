@@ -1,19 +1,15 @@
-// file: Jenkinsfile - PHIÊN BẢN SỬA LỖI CUỐI CÙNG
+// file: Jenkinsfile - PHIÊN BẢN SỬA LỖI CÚ PHÁP
 pipeline {
     agent any
 
     // ======================================================
-    // SỬA LẠI: ĐỊNH NGHĨA TRIGGER BẰNG KHỐI 'properties'
+    // SỬA LẠI: ĐỊNH NGHĨA TRIGGER BẰNG KHỐI 'options'
     // ======================================================
     options {
-        // Tùy chọn này giúp job không bị chạy 2 lần khi có thay đổi SCM và webhook
-        overrideIndexTriggers(false)
-    }
-    properties([
+        // Đặt trigger trong pipelineTriggers bên trong options
         pipelineTriggers([
-            // Sử dụng class 'GenericTrigger' của plugin
             [$class: 'GenericTrigger',
-                // Trích xuất các biến từ URL (?CUSTOMER_NAME=...&CUSTOMER_EMAIL=...)
+                // Trích xuất các biến từ URL
                 genericVariables: [
                     [key: 'CUSTOMER_NAME', regexpFilter: ''],
                     [key: 'CUSTOMER_EMAIL', regexpFilter: ''],
@@ -27,7 +23,7 @@ pipeline {
                 causeString: 'Triggered by Generic Webhook'
             ]
         ])
-    ])
+    }
 
     parameters {
         // Khối này vẫn cần thiết để job nhận diện các tham số
