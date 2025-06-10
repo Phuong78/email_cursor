@@ -5,7 +5,7 @@
     nagios_server_ip: "44.204.24.61"
 
   tasks:
-    # --- PHẦN 1: CÀI ĐẶT MAIL SERVER (POSTFIX) ---
+    # --- PHẦN 1 & 2: GIỮ NGUYÊN ---
     - name: Cài đặt Postfix không cần hỏi
       shell: |
         debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
@@ -21,7 +21,6 @@
         state: started
         enabled: yes
 
-    # --- PHẦN 2: CÀI ĐẶT NAGIOS CLIENT (NRPE) ---
     - name: Cài đặt Nagios client (NRPE) và các plugin
       apt:
         name:
@@ -39,7 +38,7 @@
         mode: '0644'
       notify: Restart NRPE
 
-    # --- PHẦN 3: TẠO USER 'newcust' ---
+    # --- PHẦN 3: TẠO USER 'newcust' (GIỮ NGUYÊN) ---
     - name: Tạo user 'newcust'
       ansible.builtin.user:
         name: newcust
@@ -56,18 +55,20 @@
 
     # ====================================================================
     # SỬA LỖI CUỐI CÙNG: SỬA TRỰC TIẾP FILE CẤU HÌNH CỦA CLOUD-INIT
+    # Tôi đã xóa task cũ và thay bằng task này để đảm bảo chỉ sửa đúng 1 file.
     # ====================================================================
     - name: Cho phép xác thực SSH bằng mật khẩu trong file của cloud-init
       lineinfile:
-        # Trỏ đến đúng file đang ghi đè cấu hình
+        # ĐÂY LÀ DÒNG SỬA QUAN TRỌNG NHẤT
         path: /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
-        regexp: '^#?PasswordAuthentication'
+        regexp: '^PasswordAuthentication'
         line: 'PasswordAuthentication yes'
         state: present
         create: yes # An toàn: Tự tạo file nếu nó không tồn tại
+      # Báo cho handler để khởi động lại dịch vụ sshd sau khi thay đổi
       notify: Restart sshd
 
-  # Khối handlers để khởi động lại các dịch vụ khi cần
+  # Khối handlers vẫn giữ nguyên, sẽ được gọi bởi 'notify' ở trên
   handlers:
     - name: Restart NRPE
       service:
