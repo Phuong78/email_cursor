@@ -5,7 +5,7 @@ pipeline {
     // Không cần khối 'tools' vì Ansible đã được cài trực tiếp
 
     parameters {
-        string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '3.91.186.154')
+        string(name: 'TARGET_HOST', description: 'IP của máy chủ cần giả lập sự cố', defaultValue: '44.204.24.61')
         // Giữ lại tham số này để nhất quán và dễ tích hợp sau này
         string(name: 'INCIDENT_TYPE', description: 'Loại sự cố (chỉ đọc)', defaultValue: 'DISK_FULL')
     }
