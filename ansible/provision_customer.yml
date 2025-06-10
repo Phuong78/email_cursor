@@ -5,13 +5,18 @@
     nagios_server_ip: "44.204.24.61"
 
   tasks:
-    # --- PHẦN 1: CÀI ĐẶT MAIL SERVER (POSTFIX) ---
+    # ====================================================================
+    # SỬA LỖI CUỐI CÙNG: CHỈ ĐỊNH DÙNG BASH EXECUTABLE
+    # ====================================================================
     - name: Cài đặt Postfix không cần hỏi
-      shell: |
-        debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
-        debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
-        apt-get install -y postfix
-      # SỬA LỖI: Xóa bỏ khối 'args' không hợp lệ
+      shell:
+        # Giữ nguyên các lệnh shell
+        cmd: |
+          debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
+          debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
+          apt-get install -y postfix
+        # THÊM VÀO: Ra lệnh cho Ansible chạy các lệnh trên bằng /bin/bash
+        executable: /bin/bash
       changed_when: true
 
     - name: Đảm bảo dịch vụ Postfix đang chạy
@@ -20,7 +25,6 @@
         state: started
         enabled: yes
 
-    # --- CÁC PHẦN CÒN LẠI GIỮ NGUYÊN ---
     - name: Cài đặt Nagios client (NRPE) và các plugin
       apt:
         name:
