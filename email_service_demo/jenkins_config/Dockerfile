@@ -1,4 +1,4 @@
-# file: email_service_demo/jenkins_config/Dockerfile
+# file: email_service_demo/jenkins_config/Dockerfile - PHIÊN BẢN HOÀN CHỈNH
 
 # Bắt đầu từ image Jenkins chính thức
 FROM jenkins/jenkins:lts
@@ -6,13 +6,20 @@ FROM jenkins/jenkins:lts
 # Chuyển sang user root để có quyền cài đặt phần mềm
 USER root
 
-# Cập nhật và cài đặt các công cụ cơ bản + python3-pip
-RUN apt-get update && apt-get install -y sudo curl gnupg python3-pip
+# BƯỚC 1: Cài đặt TẤT CẢ các gói hệ thống cần thiết trong một lệnh duy nhất
+RUN apt-get update && apt-get install -y \
+    sudo \
+    curl \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    python3-pip \
+    git
 
-# DÙNG PIP ĐỂ CÀI ANSIBLE VỚI TÙY CHỌN BỎ QUA CẢNH BÁO
+# BƯỚC 2: Cài đặt Ansible bằng pip (đã khắc phục lỗi PEP 668)
 RUN pip3 install ansible --break-system-packages
 
-# Cài đặt Terraform (giữ nguyên như cũ)
+# BƯỚC 3: Cài đặt Terraform (bây giờ sẽ thành công vì đã có lsb-release và apt-add-repository)
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
 RUN apt-get update && apt-get install -y terraform
