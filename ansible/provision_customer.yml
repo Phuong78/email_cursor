@@ -4,9 +4,6 @@
   vars:
     nagios_server_ip: "44.204.24.61"
 
-  # ==========================================================
-  # KHỐI TASKS: Chứa tất cả các công việc cần thực thi
-  # ==========================================================
   tasks:
     # --- PHẦN 1: CÀI ĐẶT MAIL SERVER (POSTFIX) ---
     - name: Cài đặt Postfix không cần hỏi
@@ -18,7 +15,7 @@
         warn: no
       changed_when: true
 
-    - name: Đảm bảo dịch vụ Postfix đang chạy và tự khởi động khi boot
+    - name: Đảm bảo dịch vụ Postfix đang chạy
       service:
         name: postfix
         state: started
@@ -42,18 +39,20 @@
         mode: '0644'
       notify: Restart NRPE
 
-    # --- PHẦN 3: TẠO USER ADMIN CHO KHÁCH HÀNG ---
-    - name: Tạo user 'admin'
+    # ==========================================================
+    # CẬP NHẬT: TẠO USER 'newcust'
+    # ==========================================================
+    - name: Tạo user 'newcust'
       ansible.builtin.user:
-        name: admin
+        name: newcust
         password: "$6$rounds=656000$yIZ4CcsgYyP.9T6C$7n2eDFOajY9pKN2vK4xEX3a/S4/DAB4PxjS9NlT2e2e9tJFrbU8bJ3UuJEqbexj3b2n8ZkksoWvjTYP745b.I/"
         shell: /bin/bash
         state: present
         create_home: yes
 
-    - name: Thêm user 'admin' vào nhóm sudo để có quyền quản trị
+    - name: Thêm user 'newcust' vào nhóm sudo
       ansible.builtin.user:
-        name: admin
+        name: newcust
         groups: sudo
         append: yes
 
@@ -67,9 +66,6 @@
         backup: yes
       notify: Restart sshd
 
-  # ==========================================================
-  # KHỐI HANDLERS: Ngang hàng với tasks, chứa các hành động được 'notify' gọi
-  # ==========================================================
   handlers:
     - name: Restart NRPE
       service:
