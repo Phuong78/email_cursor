@@ -1,6 +1,5 @@
-// file: frontend/src/App.js
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react'; // <-- Thêm 'useEffect' vào import
+import { useState, useEffect } from 'react';
 import Intro from './components/Intro';
 import Nagios from './components/Nagios';
 import AlertFix from './components/AlertFix';
@@ -9,11 +8,9 @@ import CustomerList from './components/CustomerList';
 import IncidentSimulator from './components/IncidentSimulator';
 
 function App() {
-  // THAY ĐỔI 1: Khi khởi tạo state, hãy thử đọc dữ liệu đã lưu trong localStorage
   const [customers, setCustomers] = useState(() => {
     try {
       const savedCustomers = localStorage.getItem('customers');
-      // Nếu có dữ liệu đã lưu, dùng nó. Nếu không, dùng một mảng rỗng.
       return savedCustomers ? JSON.parse(savedCustomers) : [];
     } catch (error) {
       console.error('Failed to parse customers from localStorage', error);
@@ -21,11 +18,22 @@ function App() {
     }
   });
 
-  // THAY ĐỔI 2: Dùng useEffect để tự động lưu lại danh sách mỗi khi nó thay đổi
   useEffect(() => {
-    // Chuyển mảng customers thành chuỗi JSON và lưu vào localStorage
     localStorage.setItem('customers', JSON.stringify(customers));
-  }, [customers]); // Effect này sẽ chạy lại mỗi khi state 'customers' thay đổi
+  }, [customers]);
+
+  // ========================================================
+  // THÊM VÀO: Hàm xử lý logic xóa khách hàng khỏi state
+  // ========================================================
+  const handleDeleteCustomer = (customerIndex) => {
+    // Hiển thị hộp thoại xác nhận trước khi xóa
+    if (window.confirm(`Bạn có chắc chắn muốn xóa khách hàng "${customers[customerIndex].name}" khỏi danh sách này không?`)) {
+      // Tạo một mảng mới bằng cách lọc ra khách hàng có index cần xóa
+      const updatedCustomers = customers.filter((_, index) => index !== customerIndex);
+      // Cập nhật lại state, React sẽ tự động render lại UI
+      setCustomers(updatedCustomers);
+    }
+  };
 
   return (
     <Router>
@@ -44,7 +52,13 @@ function App() {
           <Route path="/nagios" element={<Nagios />} />
           <Route path="/alert-fix" element={<AlertFix />} />
           <Route path="/log-ssh" element={<LogSSH />} />
-          <Route path="/customers" element={<CustomerList customers={customers} />} />
+          
+          {/* CẬP NHẬT: Truyền hàm handleDeleteCustomer vào component CustomerList */}
+          <Route 
+            path="/customers" 
+            element={<CustomerList customers={customers} onDeleteCustomer={handleDeleteCustomer} />} 
+          />
+
           <Route path="/simulate-incident" element={<IncidentSimulator />} />
         </Routes>
       </div>

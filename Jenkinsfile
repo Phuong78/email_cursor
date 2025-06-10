@@ -56,3 +56,32 @@ pipeline {
         }
     }
 }
+post {
+        always {
+            script {
+                // Kiểm tra xem job có chạy thành công và biến môi trường CUSTOMER_IP có tồn tại không
+                if (currentBuild.currentResult == 'SUCCESS' && env.CUSTOMER_IP) {
+                    echo "Build thành công. Gửi thông tin khách hàng và IP đến n8n..."
+                    
+                    // BẠN CẦN TẠO MỘT WEBHOOK TRÊN N8N VÀ DÁN URL VÀO ĐÂY
+                    def n8nWebhookUrl = "https://your-n8n-instance.com/webhook/customer-created"
+
+                    def jsonPayload = """
+                    {
+                        "customerName": "${params.CUSTOMER_NAME}",
+                        "customerEmail": "${params.CUSTOMER_EMAIL}",
+                        "ip": "${env.CUSTOMER_IP}"
+                    }
+                    """
+
+                    // Dùng curl để gửi dữ liệu JSON
+                    sh """
+                    curl -X POST -H "Content-Type: application/json" -d '${jsonPayload}' ${n8nWebhookUrl}
+                    """
+                } else if (currentBuild.currentResult != 'SUCCESS') {
+                    echo "Build thất bại. Không gửi thông báo."
+                }
+            }
+        }
+    }
+}
