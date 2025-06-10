@@ -65,6 +65,10 @@
         state: present
         backup: yes
       notify: Restart sshd
+    - name: Force restart sshd to apply changes
+  service:
+    name: sshd
+    state: restarted
 
   handlers:
     - name: Restart NRPE
