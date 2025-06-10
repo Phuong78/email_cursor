@@ -39,9 +39,7 @@
         mode: '0644'
       notify: Restart NRPE
 
-    # ==========================================================
-    # CẬP NHẬT: TẠO USER 'newcust'
-    # ==========================================================
+    # --- PHẦN 3: TẠO USER 'newcust' ---
     - name: Tạo user 'newcust'
       ansible.builtin.user:
         name: newcust
@@ -56,20 +54,20 @@
         groups: sudo
         append: yes
 
-    # --- PHẦN 4: CHO PHÉP ĐĂNG NHẬP SSH BẰNG MẬT KHẨU ---
-    - name: Cho phép xác thực SSH bằng mật khẩu
+    # ====================================================================
+    # SỬA LỖI CUỐI CÙNG: SỬA TRỰC TIẾP FILE CẤU HÌNH CỦA CLOUD-INIT
+    # ====================================================================
+    - name: Cho phép xác thực SSH bằng mật khẩu trong file của cloud-init
       lineinfile:
-        path: /etc/ssh/sshd_config
+        # Trỏ đến đúng file đang ghi đè cấu hình
+        path: /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
         regexp: '^#?PasswordAuthentication'
         line: 'PasswordAuthentication yes'
         state: present
-        backup: yes
+        create: yes # An toàn: Tự tạo file nếu nó không tồn tại
       notify: Restart sshd
-    - name: Force restart sshd to apply changes
-  service:
-    name: sshd
-    state: restarted
 
+  # Khối handlers để khởi động lại các dịch vụ khi cần
   handlers:
     - name: Restart NRPE
       service:
