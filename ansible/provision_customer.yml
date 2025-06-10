@@ -2,13 +2,14 @@
 - hosts: all
   become: yes
   vars:
-    # BẠN CẦN THAY ĐỊA CHỈ IP NÀY BẰNG IP CỦA NAGIOS SERVER CỦA BẠN
-    nagios_server_ip: "44.204.24.61" 
+    nagios_server_ip: "44.204.24.61"
 
+  # ==========================================================
+  # KHỐI TASKS: Chứa tất cả các công việc cần thực thi
+  # ==========================================================
   tasks:
     # --- PHẦN 1: CÀI ĐẶT MAIL SERVER (POSTFIX) ---
     - name: Cài đặt Postfix không cần hỏi
-      # Lệnh này sẽ tự động chọn các cấu hình mặc định cho Postfix
       shell: |
         debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
         debconf-set-selections <<< "postfix postfix/main_mailer_type string 'Internet Site'"
@@ -33,19 +34,18 @@
         update_cache: yes
 
     - name: Cấu hình NRPE để cho phép Nagios Server kết nối
-      # Sử dụng module 'template' để tạo file cấu hình từ một file mẫu
       template:
-        src: templates/nrpe.cfg.j2 # File mẫu sẽ được tạo ở bước tiếp theo
+        src: templates/nrpe.cfg.j2
         dest: /etc/nagios/nrpe.cfg
         owner: root
         group: root
         mode: '0644'
-      # Khi file cấu hình thay đổi, chúng ta cần restart lại dịch vụ
       notify: Restart NRPE
+
+    # --- PHẦN 3: TẠO USER ADMIN CHO KHÁCH HÀNG ---
     - name: Tạo user 'admin'
       ansible.builtin.user:
         name: admin
-        # Mật khẩu 'admin' đã được hash bằng SHA-512
         password: "$6$rounds=656000$yIZ4CcsgYyP.9T6C$7n2eDFOajY9pKN2vK4xEX3a/S4/DAB4PxjS9NlT2e2e9tJFrbU8bJ3UuJEqbexj3b2n8ZkksoWvjTYP745b.I/"
         shell: /bin/bash
         state: present
@@ -57,9 +57,26 @@
         groups: sudo
         append: yes
 
-  # 'handlers' chỉ được gọi khi có một task báo 'notify'
+    # --- PHẦN 4: CHO PHÉP ĐĂNG NHẬP SSH BẰNG MẬT KHẨU ---
+    - name: Cho phép xác thực SSH bằng mật khẩu
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication yes'
+        state: present
+        backup: yes
+      notify: Restart sshd
+
+  # ==========================================================
+  # KHỐI HANDLERS: Ngang hàng với tasks, chứa các hành động được 'notify' gọi
+  # ==========================================================
   handlers:
     - name: Restart NRPE
       service:
         name: nagios-nrpe-server
+        state: restarted
+
+    - name: Restart sshd
+      service:
+        name: sshd
         state: restarted
