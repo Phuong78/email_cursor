@@ -57,16 +57,15 @@
     # SỬA LỖI CUỐI CÙNG: SỬA TRỰC TIẾP FILE CẤU HÌNH CỦA CLOUD-INIT
     # Tôi đã xóa task cũ và thay bằng task này để đảm bảo chỉ sửa đúng 1 file.
     # ====================================================================
-    - name: Cho phép xác thực SSH bằng mật khẩu trong file của cloud-init
-      lineinfile:
-        # ĐÂY LÀ DÒNG SỬA QUAN TRỌNG NHẤT
-        path: /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
-        regexp: '^PasswordAuthentication'
-        line: 'PasswordAuthentication yes'
-        state: present
-        create: yes # An toàn: Tự tạo file nếu nó không tồn tại
-      # Báo cho handler để khởi động lại dịch vụ sshd sau khi thay đổi
-      notify: Restart sshd
+    - name: Final override to ensure password authentication is enabled
+      shell: |
+        # Đợi một chút để các tiến trình cloud-init khác có thể hoàn tất
+        sleep 5 
+        # Dùng lệnh sed để tìm và thay thế 'PasswordAuthentication no' thành 'yes'
+        sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+        # Khởi động lại sshd ngay lập tức để áp dụng
+        systemctl restart sshd
+      changed_when: false # Tắt cảnh báo "changed" cho task này
 
   # Khối handlers vẫn giữ nguyên, sẽ được gọi bởi 'notify' ở trên
   handlers:
