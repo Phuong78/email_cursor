@@ -53,13 +53,10 @@
         groups: sudo
         append: yes
 
-    - name: Cho phép xác thực SSH bằng mật khẩu trong file của cloud-init
-      lineinfile:
+    - name: Xóa file cấu hình SSH của cloud-init để tránh xung đột
+      ansible.builtin.file:
         path: /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
-        regexp: '^PasswordAuthentication'
-        line: 'PasswordAuthentication yes'
-        state: present
-        create: yes
+        state: absent
       notify: Restart sshd
 
   handlers:
